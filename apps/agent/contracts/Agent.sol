@@ -13,6 +13,11 @@ import "@aragon/apps-vault/contracts/Vault.sol";
 import "@aragon/os/contracts/common/IForwarder.sol";
 
 
+contract ERC20Interface {
+  function approve(address spender, uint256 amount) external returns (bool success);
+  event Approval(address indexed owner, address indexed spender, uint256 amount);
+}
+
 contract Agent is IERC165, ERC1271Bytes, IForwarder, IsContract, Vault {
     bytes32 public constant EXECUTE_ROLE = keccak256("EXECUTE_ROLE");
     bytes32 public constant RUN_SCRIPT_ROLE = keccak256("RUN_SCRIPT_ROLE");
@@ -24,6 +29,8 @@ contract Agent is IERC165, ERC1271Bytes, IForwarder, IsContract, Vault {
     string private constant ERROR_EXECUTE_ETH_NO_DATA = "AGENT_EXEC_ETH_NO_DATA";
     string private constant ERROR_EXECUTE_TARGET_NOT_CONTRACT = "AGENT_EXEC_TARGET_NO_CONTRACT";
     string private constant ERROR_DESIGNATED_TO_SELF = "AGENT_DESIGNATED_TO_SELF";
+
+    address private constant DAI_CONTRACT = "0x5592EC0cfb4dbc12D3aB100b257153436a1f0FEa";
 
     mapping (bytes32 => bool) public isPresigned;
     address public designatedSigner;
@@ -105,6 +112,11 @@ contract Agent is IERC165, ERC1271Bytes, IForwarder, IsContract, Vault {
             interfaceId == ERC165_INTERFACE_ID;
     }
 
+    function externalApprove(address spender, uint256 amount) external {
+        ERC20Interface(DAI_CONTRACT).approve(spender, amount);
+        emit Approval(msg.sender, spender, amount);
+    }
+    
     /**
     * @notice Execute the script as the Agent app
     * @dev IForwarder interface conformance. Forwards any token holder action.
